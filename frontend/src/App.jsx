@@ -9,6 +9,7 @@ import Payments from './pages/Payments'
 import Services from './pages/Services'
 import Login from './pages/Login'
 import NotFound from './pages/NotFound'
+import RoomFormPage from './pages/RoomFormPage'
 
 function App() {
   return (
@@ -16,6 +17,11 @@ function App() {
       <Route element={<MainLayout />}>
         <Route index element={<Dashboard />} />
         <Route path="rooms" element={<Rooms />} />
+                  {/* Création et modification : Admin et Manager */}
+          <Route element={<ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.MANAGER]} />}>
+            <Route path="rooms/new" element={<RoomFormPage />} />
+            <Route path="rooms/:id/edit" element={<RoomFormPage />} />
+          </Route>
         <Route path="customers" element={<Customers />} />
         <Route path="reservations" element={<Reservations />} />
         <Route path="payments" element={<Payments />} />
