@@ -1,3 +1,3 @@
-export function formatPrice(value) {
+﻿export function formatPrice(value) {
   return `${Number(value).toFixed(2)} DT`
 }

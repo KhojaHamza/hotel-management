@@ -1,4 +1,4 @@
-export const ROOM_TYPES = ['Simple', 'Double', 'Suite', 'Familiale']
+﻿export const ROOM_TYPES = ['Simple', 'Double', 'Suite', 'Familiale']
 
 export const ROOM_STATUS = {
   AVAILABLE: 'available',
