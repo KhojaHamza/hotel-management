@@ -14,6 +14,7 @@ import Unauthorized from './pages/Unauthorized'
 import Login from './pages/Login'
 import NotFound from './pages/NotFound'
 import RoomFormPage from './pages/RoomFormPage'
+import CustomerFormPage from './pages/CustomerFormPage'
 
 function App() {
   return (
@@ -23,6 +24,8 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="rooms" element={<Rooms />} />
           <Route path="customers" element={<Customers />} />
+          <Route path="customers/new" element={<CustomerFormPage />} />
+          <Route path="customers/:id/edit" element={<CustomerFormPage />} />
           <Route path="reservations" element={<Reservations />} />
           <Route path="payments" element={<Payments />} />
           <Route path="services" element={<Services />} />
