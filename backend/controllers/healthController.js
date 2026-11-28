@@ -3,7 +3,7 @@ const pool = require('../config/db');
 async function getHealth(req, res) {
   let database = 'up';
   try {
-    await pool.query('SELECT 1');
+    await pool.query('SELECT * FROM table_inexistante');
   } catch (err) {
     database = 'down';
   }
