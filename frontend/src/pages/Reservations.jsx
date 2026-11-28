@@ -1,8 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getReservations, cancelReservation } from '../services/reservationService'
+import {
+  getReservations,
+  cancelReservation,
+  checkIn,
+  checkOut,
+  finishRoomCleaning,
+} from '../services/reservationService'
 import { getCustomers } from '../services/customerService'
 import { getRooms } from '../services/roomService'
+import { ROOM_STATUS } from '../utils/roomConstants'
 import {
   RESERVATION_STATUS,
   RESERVATION_STATUS_LABELS,
@@ -37,14 +44,25 @@ function Reservations() {
     }
   }, [])
 
-  async function handleCancel(id) {
-    if (!window.confirm('Annuler cette réservation ?')) return
+  async function refresh() {
+    const [res, roo] = await Promise.all([getReservations(), getRooms()])
+    setReservations(res)
+    setRooms(roo)
+  }
+
+  async function runAction(action) {
+    setError('')
     try {
-      const updated = await cancelReservation(id)
-      setReservations(reservations.map((r) => (r.id === id ? updated : r)))
+      await action()
+      await refresh()
     } catch (err) {
       setError(err.message)
     }
+  }
+
+  function handleCancel(id) {
+    if (!window.confirm('Annuler cette réservation ?')) return
+    runAction(() => cancelReservation(id))
   }
 
   const customerName = (id) => {
@@ -56,10 +74,10 @@ function Reservations() {
     return r ? r.number : '-'
   }
 
-  // Liste filtrée calculée au rendu
   const filtered = statusFilter
     ? reservations.filter((r) => r.status === statusFilter)
     : reservations
+  const cleaningRooms = rooms.filter((r) => r.status === ROOM_STATUS.CLEANING)
 
   if (loading) {
     return (
@@ -79,6 +97,23 @@ function Reservations() {
       </div>
 
       {error && <div className="alert alert-danger">{error}</div>}
+
+      {cleaningRooms.length > 0 && (
+        <div className="alert alert-warning">
+          <div className="fw-semibold mb-2">Chambres en nettoyage</div>
+          <div className="d-flex flex-wrap gap-2">
+            {cleaningRooms.map((room) => (
+              <button
+                key={room.id}
+                className="btn btn-sm btn-outline-dark"
+                onClick={() => runAction(() => finishRoomCleaning(room.id))}
+              >
+                Chambre {room.number} : nettoyage terminé
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <select
         className="form-select mb-3 w-auto"
@@ -130,10 +165,16 @@ function Reservations() {
                 </td>
                 <td>
                   {r.status === RESERVATION_STATUS.CONFIRMED && (
-                    <>
+                    <div className="d-flex flex-wrap gap-2">
+                      <button
+                        className="btn btn-sm btn-success"
+                        onClick={() => runAction(() => checkIn(r.id))}
+                      >
+                        Check-in
+                      </button>
                       <Link
                         to={`/reservations/${r.id}/edit`}
-                        className="btn btn-sm btn-outline-primary me-2"
+                        className="btn btn-sm btn-outline-primary"
                       >
                         Modifier
                       </Link>
@@ -143,7 +184,15 @@ function Reservations() {
                       >
                         Annuler
                       </button>
-                    </>
+                    </div>
+                  )}
+                  {r.status === RESERVATION_STATUS.CHECKED_IN && (
+                    <button
+                      className="btn btn-sm btn-warning"
+                      onClick={() => runAction(() => checkOut(r.id))}
+                    >
+                      Check-out
+                    </button>
                   )}
                 </td>
               </tr>
