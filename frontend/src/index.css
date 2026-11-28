@@ -1,0 +1,8 @@
+.sidebar {
+  width: 240px;
+  min-width: 240px;
+}
+
+.content-area {
+  min-width: 0;
+}
