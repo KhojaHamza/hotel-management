@@ -1,5 +1,6 @@
 import { RESERVATION_STATUS } from '../utils/reservationConstants'
-import { getRooms } from './roomService'
+import { ROOM_STATUS, ROOM_STATUS_LABELS } from '../utils/roomConstants'
+import { getRooms, getRoomById, updateRoom } from './roomService'
 
 const STORAGE_KEY = 'hotel_reservations'
 
@@ -78,7 +79,7 @@ export async function getAvailableRooms(checkInDate, checkOutDate, excludeId) {
   const reservations = readReservations()
   return rooms.filter(
     (room) =>
-      room.status !== 'maintenance' &&
+      room.status !== ROOM_STATUS.MAINTENANCE &&
       !hasConflict(reservations, room.id, checkInDate, checkOutDate, excludeId)
   )
 }
@@ -147,4 +148,54 @@ export async function cancelReservation(id) {
   reservations[index] = { ...reservations[index], status: RESERVATION_STATUS.CANCELLED }
   writeReservations(reservations)
   return reservations[index]
+}
+
+export async function checkIn(id) {
+  await delay(300)
+  const reservations = readReservations()
+  const index = reservations.findIndex((r) => r.id === Number(id))
+  if (index === -1) throw new Error('Réservation introuvable')
+
+  const reservation = reservations[index]
+  if (reservation.status !== RESERVATION_STATUS.CONFIRMED) {
+    throw new Error('Seule une réservation confirmée peut faire son check-in')
+  }
+
+  const room = await getRoomById(reservation.roomId)
+  if (room.status !== ROOM_STATUS.AVAILABLE) {
+    throw new Error(
+      `La chambre ${room.number} n'est pas disponible (${ROOM_STATUS_LABELS[room.status]})`
+    )
+  }
+
+  await updateRoom(room.id, { status: ROOM_STATUS.OCCUPIED })
+  reservations[index] = { ...reservation, status: RESERVATION_STATUS.CHECKED_IN }
+  writeReservations(reservations)
+  return reservations[index]
+}
+
+export async function checkOut(id) {
+  await delay(300)
+  const reservations = readReservations()
+  const index = reservations.findIndex((r) => r.id === Number(id))
+  if (index === -1) throw new Error('Réservation introuvable')
+
+  const reservation = reservations[index]
+  if (reservation.status !== RESERVATION_STATUS.CHECKED_IN) {
+    throw new Error('Seule une réservation en séjour peut faire son check-out')
+  }
+
+  await updateRoom(reservation.roomId, { status: ROOM_STATUS.CLEANING })
+  reservations[index] = { ...reservation, status: RESERVATION_STATUS.CHECKED_OUT }
+  writeReservations(reservations)
+  return reservations[index]
+}
+
+export async function finishRoomCleaning(roomId) {
+  await delay(300)
+  const room = await getRoomById(roomId)
+  if (room.status !== ROOM_STATUS.CLEANING) {
+    throw new Error("Cette chambre n'est pas en cours de nettoyage")
+  }
+  return updateRoom(room.id, { status: ROOM_STATUS.AVAILABLE })
 }
