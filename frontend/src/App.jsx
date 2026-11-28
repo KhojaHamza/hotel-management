@@ -16,7 +16,7 @@ import NotFound from './pages/NotFound'
 import RoomFormPage from './pages/RoomFormPage'
 import CustomerFormPage from './pages/CustomerFormPage'
 import CustomerDetails from './pages/CustomerDetails'
-
+import ReservationFormPage from './pages/ReservationFormPage'
 function App() {
   return (
     <Routes>
@@ -29,6 +29,8 @@ function App() {
           <Route path="customers/:id/edit" element={<CustomerFormPage />} />
            <Route path="customers/:id" element={<CustomerDetails />} />
           <Route path="reservations" element={<Reservations />} />
+          <Route path="reservations/new" element={<ReservationFormPage />} />
+          <Route path="reservations/:id/edit" element={<ReservationFormPage />} />
           <Route path="payments" element={<Payments />} />
           <Route path="services" element={<Services />} />
           <Route path="unauthorized" element={<Unauthorized />} />

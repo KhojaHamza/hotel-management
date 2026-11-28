@@ -1,19 +1,32 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getCustomerById } from '../services/customerService'
+import { getReservations } from '../services/reservationService'
+import { getRooms } from '../services/roomService'
 import { formatDate } from '../utils/formatters'
+import {
+  RESERVATION_STATUS_LABELS,
+  RESERVATION_STATUS_COLORS,
+} from '../utils/reservationConstants'
 
 function CustomerDetails() {
   const { id } = useParams()
   const [customer, setCustomer] = useState(null)
+  const [reservations, setReservations] = useState([])
+  const [rooms, setRooms] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
     let ignore = false
 
-    getCustomerById(id)
-      .then((data) => { if (!ignore) setCustomer(data) })
+    Promise.all([getCustomerById(id), getReservations(), getRooms()])
+      .then(([customerData, reservationsData, roomsData]) => {
+        if (ignore) return
+        setCustomer(customerData)
+        setReservations(reservationsData)
+        setRooms(roomsData)
+      })
       .catch((err) => { if (!ignore) setError(err.message) })
       .finally(() => { if (!ignore) setLoading(false) })
 
@@ -31,6 +44,13 @@ function CustomerDetails() {
         <Link to="/customers" className="btn btn-outline-secondary">Retour à la liste</Link>
       </div>
     )
+  }
+
+  // Historique du client calculé au rendu (pas stocké dans un state)
+  const history = reservations.filter((r) => r.customerId === customer.id)
+  const roomNumber = (roomId) => {
+    const room = rooms.find((r) => r.id === roomId)
+    return room ? room.number : '-'
   }
 
   return (
@@ -67,9 +87,38 @@ function CustomerDetails() {
 
       <div className="card shadow-sm">
         <div className="card-header fw-semibold">Historique des réservations</div>
-        <div className="card-body text-muted">
-          Disponible avec la gestion des réservations (feature/reservations).
-        </div>
+        {history.length === 0 ? (
+          <div className="card-body text-muted">Aucune réservation pour ce client.</div>
+        ) : (
+          <div className="table-responsive">
+            <table className="table table-striped align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Chambre</th>
+                  <th>Arrivée</th>
+                  <th>Départ</th>
+                  <th>Montant</th>
+                  <th>Statut</th>
+                </tr>
+              </thead>
+              <tbody>
+                {history.map((r) => (
+                  <tr key={r.id}>
+                    <td>{roomNumber(r.roomId)}</td>
+                    <td>{r.checkInDate}</td>
+                    <td>{r.checkOutDate}</td>
+                    <td>{r.totalAmount} DT</td>
+                    <td>
+                      <span className={`badge bg-${RESERVATION_STATUS_COLORS[r.status]}`}>
+                        {RESERVATION_STATUS_LABELS[r.status]}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   )
